@@ -7,10 +7,10 @@ A comprehensive set of Claude Code skills for investigating, planning, implement
 These skills form a complete bug-fixing pipeline that integrates with GitHub Issues and Pull Requests:
 
 ```
-@investigate-bug → @fix-planner → @implement-fix → @create-pr
-       ↓               ↓               ↓               ↓
-   Posts report    Posts plan     Commits code    Opens PR
-   to issue        to issue       to branch       on GitHub
+@issue-triage → @investigate-bug → @fix-planner → @implement-fix → @create-pr
+      ↓               ↓                 ↓               ↓               ↓
+  Prioritizes     Posts report      Posts plan     Commits code    Opens PR
+  open issues     to issue          to issue       to branch       on GitHub
 ```
 
 ## Installation
@@ -33,12 +33,35 @@ your-project/
     ├── fix-planner.md
     ├── implement-fix.md
     ├── investigate-bug.md
-    └── commands/
-        ├── fix-bug.md
-        └── investigate-bug.md
+    ├── commands/
+    │   ├── fix-bug.md
+    │   └── investigate-bug.md
+    └── skills/
+        └── issue-triage/
+            ├── SKILL.md
+            └── scripts/
+                └── generate_report.py
 ```
 
 ## Skills
+
+### 0. `/issue-triage`
+
+Fetch, rank, and display open GitHub issues by priority.
+
+**What it does:**
+- Fetches all open issues from current repository
+- Ranks by priority: 🔴 Critical → 🟠 High → 🟡 Aging Bugs → ⚪ Standard
+- Displays as scannable markdown table with excerpts
+- Prompts user to select an issue for investigation
+
+**Priority Logic:**
+- **Critical/P0**: Labels containing `critical`, `p0`
+- **High/P1**: Labels containing `high-priority`, `p1`
+- **Aging bugs**: `bug` label AND > 7 days old
+- **Standard**: Everything else
+
+**Output:** Prioritized issue table with links
 
 ### 1. `/investigate-bug {issue_number}`
 
@@ -123,6 +146,9 @@ Streamlined investigation that prepares everything for `/fix-bug`.
 ### Standard Bug Fix (Recommended)
 
 ```bash
+# Step 0: See what needs attention
+/issue-triage
+
 # Step 1: Investigate the bug
 /investigate-bug 142
 
