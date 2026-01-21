@@ -13,24 +13,17 @@ Deep dive into a GitHub issue to identify root cause, affected code, and define 
 /investigate-bug {issue_number}
 ```
 
-## Prerequisites
-
-### Anvil Session Logs Access (Optional but Recommended)
-
-To automatically fetch session logs from Anvil, set the `ANVIL_AUTH_COOKIES` environment variable:
-
-```bash
-export ANVIL_AUTH_COOKIES="anvil_auth=YOUR_ANVIL_AUTH_COOKIE; ring-session=YOUR_RING_SESSION_COOKIE"
-```
-
-**To get your cookies:**
-1. Open the Anvil IDE in Chrome
-2. Open DevTools (F12) → Application tab → Cookies → `viper.anvil.works`
-3. Copy the values for `anvil_auth` and `ring-session`
-
-**Note:** The `ring-session` cookie expires when the browser closes, so you may need to refresh it periodically.
-
 ## Workflow
+
+### Step 0: Branch Setup
+
+**Ensure working from master branch** (staging with accumulated fixes):
+```bash
+git checkout master && git pull origin master
+```
+This ensures you investigate against the latest code including pending fixes.
+
+> **Note**: `published` is production - only compare to it when checking live behavior.
 
 ### Step 1: Validate Input
 
@@ -54,36 +47,9 @@ Parse the issue body for:
 - **Expected vs actual behavior** - What should happen vs what happens
 - **Environment details** - Version, OS, browser, etc.
 - **User-reported files** - Any files mentioned by the reporter
-- **Session ID** - Extract from the `[View Session Logs]` link if present
+- **Session link** - Note if `[View Session Logs]` link is present (can be fetched separately with `@get-session-logs`)
 
-### Step 3: Fetch Session Logs (If Available)
-
-If a session ID was found in the issue and `ANVIL_AUTH_COOKIES` is set:
-
-1. **Extract session ID from the issue body:**
-   - Look for links matching: `https://viper.anvil.works/build/apps/.../sessions/{SESSION_ID}#logs`
-   - The session ID is the alphanumeric string before `#logs`
-
-2. **Fetch the session logs:**
-```bash
-SESSION_ID="extracted_session_id"
-curl -s "https://viper.anvil.works/ide/apps/7BFWWU5AZVWM5IVB/sessions/${SESSION_ID}" \
-  -H "Accept: application/json" \
-  -H "Cookie: ${ANVIL_AUTH_COOKIES}" | jq -r '.log_text'
-```
-
-3. **Analyze the session logs for:**
-   - **User journey** - What forms/pages did they visit before the error?
-   - **Preceding operations** - What actions triggered before the crash?
-   - **Timing** - How long was the session active before the error?
-   - **Related errors** - Were there earlier warnings or errors?
-   - **Data context** - What specific records/assets were being accessed?
-
-4. **If session logs unavailable:**
-   - Note: "Session logs not available (ANVIL_AUTH_COOKIES not set or session expired)"
-   - Continue investigation using stack trace and code analysis
-
-### Step 4: Code Investigation
+### Step 3: Code Investigation
 
 Search for relevant code based on extracted context:
 
@@ -102,14 +68,14 @@ grep -rn "function_name" --include="*.py"
 - Trace backwards to find the root cause
 - Document the call chain
 
-### Step 5: Identify Root Cause
+### Step 4: Identify Root Cause
 
 Analyze findings to determine:
 - **Primary cause** - The actual bug (code error, missing check, etc.)
 - **Contributing factors** - Conditions that expose the bug
 - **Impact assessment** - What breaks, who is affected
 
-### Step 6: Define Scope
+### Step 5: Define Scope
 
 Create explicit boundaries:
 
@@ -123,7 +89,7 @@ Create explicit boundaries:
 - Features/systems that are explicitly excluded
 - Why they're excluded (prevent scope creep)
 
-### Step 7: Testing Requirements
+### Step 6: Testing Requirements
 
 Identify what needs testing:
 - **Unit tests** - Functions to test
@@ -131,14 +97,14 @@ Identify what needs testing:
 - **Manual tests** - Steps to reproduce and verify fix
 - **Regression risks** - What else might break
 
-### Step 8: Data Assessment
+### Step 7: Data Assessment
 
 Check if data remediation is needed:
 - Are there corrupted records?
 - Estimate count of affected records
 - Note any queries to identify them
 
-### Step 9: Generate Report
+### Step 8: Generate Report
 
 Create the investigation report using this format:
 
@@ -159,20 +125,12 @@ Create the investigation report using this format:
 
 ## Session Context
 
-**Session ID:** `{session_id}` | [View Full Logs]({session_url})
+{If session link found in issue:}
+**Session Link:** [View Session Logs]({session_url})
 
-### User Journey (from session logs)
-1. {First action/form loaded}
-2. {Subsequent actions}
-3. {Action that triggered the error}
+> 💡 For detailed session analysis, run: `@get-session-logs {issue_number}`
 
-### Key Observations
-- **Forms visited:** {list of forms from logs}
-- **Data accessed:** {assets, work orders, etc. mentioned in logs}
-- **Time in session:** {duration from start_time to error}
-- **Prior errors:** {any warnings before the main error}
-
-{If session logs unavailable: "Session logs not available - investigation based on stack trace only."}
+{If no session link: "No session link found in issue."}
 
 ---
 
@@ -264,7 +222,7 @@ Create the investigation report using this format:
 Run `@fix-planner {issue_number}` to generate implementation plan.
 ```
 
-### Step 10: Post to GitHub
+### Step 9: Post to GitHub
 
 Save locally and post to GitHub:
 
@@ -280,7 +238,7 @@ gh issue comment $ARGUMENTS --body-file docs/investigations/INVESTIGATION-$ARGUM
 gh issue edit $ARGUMENTS --add-label "investigated"
 ```
 
-### Step 11: Session Complete
+### Step 10: Session Complete
 
 Output:
 > ## Investigation Complete
@@ -334,10 +292,6 @@ Output:
 | No bug label | "⚠️ Issue #{n} doesn't have a 'bug' label. Proceeding with investigation anyway." |
 | Cannot find code | "Could not locate code related to: {search}. Please provide more context." |
 | Multiple possible causes | List all possibilities with confidence levels |
-| No session ID in issue | Note "No session ID found" and continue with stack trace analysis |
-| Session logs fetch fails (401) | "⚠️ Session logs unavailable (auth expired). Update ANVIL_AUTH_COOKIES and retry, or continue without." |
-| Session logs fetch fails (404) | "⚠️ Session logs expired or deleted. Continuing with stack trace only." |
-| ANVIL_AUTH_COOKIES not set | "ℹ️ ANVIL_AUTH_COOKIES not set. Skipping session logs (set env var to enable)." |
 
 ---
 
@@ -346,4 +300,5 @@ Output:
 | Skill | Relationship |
 |-------|--------------|
 | `@issue-triage` | **Predecessor** - May suggest issues to investigate |
+| `@get-session-logs` | **Optional** - Fetch session logs for additional context |
 | `@fix-planner` | **Next step** - Uses this investigation report |

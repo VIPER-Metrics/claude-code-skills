@@ -71,11 +71,13 @@ Create the plan with this exact structure:
 
 ## Pre-Implementation Checklist
 
-- [ ] Create feature branch: `fix/issue-{number}-{short-description}`
+- [ ] Create feature branch from **master** (staging): `git checkout master && git pull && git checkout -b fix-issue-{number}-{short-description}`
 - [ ] Verify current test suite passes: `python -m pytest` or appropriate command
 - [ ] Backup affected data (if data remediation involved)
 - [ ] Review investigation report thoroughly
 - [ ] Confirm understanding of root cause
+
+> **Note**: We branch from `master` (staging) which contains accumulated fixes, not `published` (production).
 
 ---
 

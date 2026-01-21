@@ -49,10 +49,10 @@ cat docs/fix-plans/FIX-$ARGUMENTS-plan.md 2>/dev/null || \
   gh issue view $ARGUMENTS --json comments --jq '.comments[] | select(.body | contains("# Fix Plan:")) | .body'
 
 # Get commit history on this branch
-git log main..HEAD --oneline
+git log master..HEAD --oneline
 
 # Get changed files
-git diff main --stat
+git diff master --stat
 ```
 
 ### Step 3: Generate PR Description
@@ -144,7 +144,7 @@ Create the PR using GitHub CLI:
 gh pr create \
   --title "Fix #{issue_number}: {short_title}" \
   --body-file /tmp/pr-description.md \
-  --base main \
+  --base master \
   --label "bug-fix"
 ```
 
@@ -183,7 +183,7 @@ Output:
 >
 > **PR:** {pr_url}
 >
-> **Branch:** `{branch_name}` → `main`
+> **Branch:** `{branch_name}` → `master`
 >
 > **Files changed:** {count}
 >
