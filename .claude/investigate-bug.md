@@ -47,7 +47,6 @@ Parse the issue body for:
 - **Expected vs actual behavior** - What should happen vs what happens
 - **Environment details** - Version, OS, browser, etc.
 - **User-reported files** - Any files mentioned by the reporter
-- **Session link** - Note if `[View Session Logs]` link is present (can be fetched separately with `@get-session-logs`)
 
 ### Step 3: Code Investigation
 
@@ -120,17 +119,6 @@ Create the investigation report using this format:
 ## Summary
 
 {2-3 sentence summary of the bug and its root cause}
-
----
-
-## Session Context
-
-{If session link found in issue:}
-**Session Link:** [View Session Logs]({session_url})
-
-> 💡 For detailed session analysis, run: `@get-session-logs {issue_number}`
-
-{If no session link: "No session link found in issue."}
 
 ---
 
@@ -300,5 +288,4 @@ Output:
 | Skill | Relationship |
 |-------|--------------|
 | `@issue-triage` | **Predecessor** - May suggest issues to investigate |
-| `@get-session-logs` | **Optional** - Fetch session logs for additional context |
 | `@fix-planner` | **Next step** - Uses this investigation report |
