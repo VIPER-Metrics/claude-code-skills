@@ -1,6 +1,6 @@
-# Claude Code Skills: Bug Fixing Workflow
+# Claude Code Skills
 
-A comprehensive set of Claude Code skills for investigating, planning, implementing, and submitting bug fixes via GitHub.
+A comprehensive set of Claude Code skills, commands, and agents for Anvil.works development and bug fixing workflows.
 
 ## Overview
 
@@ -14,6 +14,24 @@ These skills form a complete bug-fixing pipeline that integrates with GitHub Iss
 ```
 
 ## Installation
+
+### For VIPER Team Members
+
+Clone this repo alongside the other VIPER repos and run the setup script:
+
+```bash
+cd ~/GitHub  # or wherever your repos are
+
+# Clone if you haven't already
+git clone https://github.com/VIPER-Metrics/claude-code-skills.git
+
+# Run setup script to create shared CLAUDE.md symlink
+./claude-code-skills/setup.sh
+```
+
+This creates a symlink so the shared `CLAUDE.md` is read automatically when working in any VIPER repo.
+
+### For Other Projects
 
 Copy the `.claude` directory to your project root:
 
@@ -33,7 +51,16 @@ your-project/
     ├── fix-planner.md
     ├── implement-fix.md
     ├── investigate-bug.md
+    ├── agents/
+    │   ├── anvil-backend-specialist.md
+    │   ├── anvil-client-yaml-specialist.md
+    │   ├── code-reviewer.md
+    │   ├── data-table-documenter.md
+    │   ├── documentation-writer.md
+    │   ├── maintenance-planner.md
+    │   └── mixpanel-analytics-optimizer.md
     ├── commands/
+    │   ├── anvil-reference.md
     │   ├── fix-bug.md
     │   └── investigate-bug.md
     └── skills/
@@ -126,6 +153,22 @@ Creates a GitHub Pull Request from a completed fix implementation.
 - Updates issue labels
 
 **Output:** Pull request URL
+
+## Agents
+
+Specialized agents in `.claude/agents/` handle domain-specific tasks:
+
+| Agent | Purpose |
+|-------|---------|
+| `anvil-backend-specialist` | Server modules, database queries, security controls, `q.fetch_only()` optimization |
+| `anvil-client-yaml-specialist` | Form YAML modifications, UI components, data bindings, event handlers |
+| `code-reviewer` | Security review, formatting checks, breaking change detection |
+| `data-table-documenter` | Database schema documentation after changes |
+| `documentation-writer` | Feature documentation, What's New content |
+| `maintenance-planner` | Heavy equipment maintenance workflow design |
+| `mixpanel-analytics-optimizer` | Analytics tracking via Segment/Mixpanel |
+
+**Usage**: Agents are invoked automatically by Claude Code when appropriate, or can be triggered via the Task tool.
 
 ## Quick Commands
 
