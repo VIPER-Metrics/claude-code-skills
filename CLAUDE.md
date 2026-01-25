@@ -18,8 +18,12 @@ This file provides cross-repository context for all VIPER applications. It is re
 
 ### Testing
 - VS Code cannot run Anvil applications directly
-- All testing must be done through the **Anvil IDE**
-- Use the Anvil IDE's built-in debugger and console for troubleshooting
+- **UI testing** must be done through the **Anvil IDE**
+- **Server-side testing** has local options - see `claude-code-skills/docs/local-testing-anvil.md`:
+  - **Anvil App Server**: Run app locally with local database (`pip install anvil-app-server`)
+  - **Anvil Uplink**: Connect pytest to live/staging app (`pip install anvil-uplink`)
+  - **anvil_works_design_test**: Mock Anvil for unit tests
+- For sync endpoint testing, prefer Uplink against a staging environment
 
 ### Agent Usage
 - **Use agents wherever possible** to preserve the main context window
