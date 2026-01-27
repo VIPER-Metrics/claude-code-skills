@@ -4,14 +4,9 @@ Thoroughly investigate GitHub issue #$ARGUMENTS and prepare all context needed f
 
 ## Phase 0: Validation & Setup
 
-1. **Ensure working from master branch** (staging with accumulated fixes):
-   - `git checkout master && git pull origin master`
-   - This ensures you investigate against the latest code including pending fixes
-   - Note: `published` is production - only compare to it when checking live behavior
+1. **Fetch the issue** from GitHub using `gh issue view $ARGUMENTS --json title,body,labels,comments,author,createdAt`
 
-2. **Fetch the issue** from GitHub using `gh issue view $ARGUMENTS --json title,body,labels,comments,author,createdAt`
-
-3. **Validate issue type** - Check if the issue has a `bug` label:
+2. **Validate issue type** - Check if the issue has a `bug` label:
    - If YES: Continue with investigation
    - If NO: Stop and ask the user:
      > "This issue isn't labeled as a bug."
@@ -25,7 +20,7 @@ Thoroughly investigate GitHub issue #$ARGUMENTS and prepare all context needed f
      > 2. Use /scope-issue instead (for features/enhancements)
      > 3. Continue investigation anyway
 
-4. **Extract key information** from the issue:
+3. **Extract key information** from the issue:
    - Error messages and stack traces
    - Affected files/line numbers mentioned
    - Steps to reproduce (if provided)
@@ -36,18 +31,18 @@ Thoroughly investigate GitHub issue #$ARGUMENTS and prepare all context needed f
 
 ## Phase 1: Code Discovery
 
-5. **Search for error locations** - Use stack traces and error messages to find:
+4. **Search for error locations** - Use stack traces and error messages to find:
    - Primary error location (file and line number)
    - All functions in the call stack
    - Related error handling code
 
-6. **Read affected code** - Read each file involved:
+5. **Read affected code** - Read each file involved:
    - The file where the error occurs
    - Files that call into the error location
    - Files that the error location calls
    - Any defensive/fallback handling that exists
 
-7. **Map the code paths** - Trace how we get to the error:
+6. **Map the code paths** - Trace how we get to the error:
    - Entry points (API endpoints, UI events, background tasks)
    - Data flow through the system
    - Conditions that trigger the error path
@@ -56,18 +51,18 @@ Thoroughly investigate GitHub issue #$ARGUMENTS and prepare all context needed f
 
 ## Phase 2: Root Cause Analysis
 
-8. **Identify the root cause** - Determine:
+7. **Identify the root cause** - Determine:
    - What is happening (the symptom)
    - Why it's happening (the cause)
    - When it happens (the conditions/triggers)
    - How often it happens (frequency/severity)
 
-9. **Check for related occurrences** - Search for:
+8. **Check for related occurrences** - Search for:
    - Similar error patterns elsewhere in the codebase
    - Related issues or previous fixes
    - Comments or TODOs about known issues
 
-10. **Understand the impact**:
+9. **Understand the impact**:
    - Which users/companies are affected
    - What functionality is broken
    - Is there data corruption or just UX issues
@@ -77,12 +72,12 @@ Thoroughly investigate GitHub issue #$ARGUMENTS and prepare all context needed f
 
 ## Phase 3: Define Scope Boundaries
 
-11. **Document what WILL be modified** - List specific:
+10. **Document what WILL be modified** - List specific:
     - Files that need changes
     - Functions that need updates
     - The nature of each change (fix, add handling, refactor)
 
-12. **Document what WON'T be touched** - Explicitly list:
+11. **Document what WON'T be touched** - Explicitly list:
     - Fragile or complex systems to avoid
     - Related but out-of-scope areas
     - Architecture that should remain unchanged
@@ -92,7 +87,7 @@ Thoroughly investigate GitHub issue #$ARGUMENTS and prepare all context needed f
     > ### What We Won't Touch
     > - **{System/Component}** - {Why it's excluded and what could break if we did touch it}
 
-13. **Identify risks** if excluded areas were modified:
+12. **Identify risks** if excluded areas were modified:
     - What could break
     - What testing would be required
     - Why it's not worth the risk for this fix
@@ -101,13 +96,13 @@ Thoroughly investigate GitHub issue #$ARGUMENTS and prepare all context needed f
 
 ## Phase 4: Data Analysis (If Applicable)
 
-14. **For data-related bugs**, investigate:
+13. **For data-related bugs**, investigate:
     - How many records are affected
     - Which companies/users have bad data
     - Can data be recovered or must it be reconstructed
     - What validation is needed before remediation
 
-15. **For duplicate/integrity issues**, determine:
+14. **For duplicate/integrity issues**, determine:
     - Which record should be kept (evaluation criteria)
     - What signals indicate "active use" (edits, linked records, attachments)
     - What should happen to the archived/removed records
@@ -117,19 +112,19 @@ Thoroughly investigate GitHub issue #$ARGUMENTS and prepare all context needed f
 
 ## Phase 5: Plan the Fix
 
-16. **Outline the proposed fix**:
+15. **Outline the proposed fix**:
     - Specific code changes needed
     - Order of operations
     - Any data remediation steps
     - Rollback plan if something goes wrong
 
-17. **Define testing requirements**:
+16. **Define testing requirements**:
     - How to reproduce the original bug
     - How to verify the fix works
     - Regression tests needed
     - Edge cases to check
 
-18. **Identify test data needs**:
+17. **Identify test data needs**:
     - Specific records/UUIDs to test with
     - Companies/environments to verify in
     - Mock data or conditions to create
@@ -138,7 +133,7 @@ Thoroughly investigate GitHub issue #$ARGUMENTS and prepare all context needed f
 
 ## Phase 6: Document & Update Issue
 
-19. **Create Investigation Report** with this structure:
+18. **Create Investigation Report** with this structure:
 
 ```markdown
 ## Bug Investigation Report
@@ -191,12 +186,12 @@ Thoroughly investigate GitHub issue #$ARGUMENTS and prepare all context needed f
 - [ ] Data remediation planned (if applicable)
 ```
 
-20. **Post investigation to GitHub issue** as a comment:
+19. **Post investigation to GitHub issue** as a comment:
     ```bash
     gh issue comment $ARGUMENTS --body "{investigation report}"
     ```
 
-21. **Confirm readiness** - Tell the user:
+20. **Confirm readiness** - Tell the user:
     > Investigation complete for issue #{number}.
     >
     > The investigation report has been added to the GitHub issue.

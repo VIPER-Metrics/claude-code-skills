@@ -14,7 +14,7 @@ Investigate and fix GitHub issue #$ARGUMENTS
 3. **Create isolation branch immediately**:
    - Determine base branch: Run `git remote show origin | grep 'HEAD branch'` to find the default branch
    - If that fails, check if `origin/master` exists with `git branch -r | grep origin/master`
-   - Use `master` as the base branch (this is where PRs will be merged)
+   - Use `master` as the staging branch (this is where PRs will be merged)
    - `git checkout {base_branch} && git pull origin {base_branch}`
    - `git checkout -b fix-{issue_number}-{short-description}`
    - This isolates your work from other changes during investigation

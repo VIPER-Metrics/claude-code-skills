@@ -1,291 +1,212 @@
+# Bug Investigation Agent
+
+Thoroughly investigate GitHub issue #$ARGUMENTS and prepare all context needed for `/fix-bug` to implement the solution.
+
+## Phase 0: Validation & Setup
+
+1. **Fetch the issue** from GitHub using `gh issue view $ARGUMENTS --json title,body,labels,comments,author,createdAt`
+
+2. **Validate issue type** - Check if the issue has a `bug` label:
+   - If YES: Continue with investigation
+   - If NO: Stop and ask the user:
+     > "This issue isn't labeled as a bug."
+     >
+     > Labels found: {list labels}
+     >
+     > The `/investigate-bug` command is designed for bug fixes. For new features or enhancements, consider using `/scope-issue` instead.
+     >
+     > How would you like to proceed?
+     > 1. Add "bug" label and continue investigation
+     > 2. Use /scope-issue instead (for features/enhancements)
+     > 3. Continue investigation anyway
+
+3. **Extract key information** from the issue:
+   - Error messages and stack traces
+   - Affected files/line numbers mentioned
+   - Steps to reproduce (if provided)
+   - Affected companies/users
+   - Related issues mentioned
+
 ---
-name: investigate-bug
-description: Deep dive investigation of a GitHub issue to identify root cause, affected files, and scope. Use when the user wants to investigate a bug, analyze an issue, find the root cause, or says "investigate issue", "debug issue", "analyze bug", "what's causing issue #X". Creates an investigation report and posts it to the GitHub issue.
+
+## Phase 1: Code Discovery
+
+4. **Search for error locations** - Use stack traces and error messages to find:
+   - Primary error location (file and line number)
+   - All functions in the call stack
+   - Related error handling code
+
+5. **Read affected code** - Read each file involved:
+   - The file where the error occurs
+   - Files that call into the error location
+   - Files that the error location calls
+   - Any defensive/fallback handling that exists
+
+6. **Map the code paths** - Trace how we get to the error:
+   - Entry points (API endpoints, UI events, background tasks)
+   - Data flow through the system
+   - Conditions that trigger the error path
+
 ---
 
-# Investigate Bug
+## Phase 2: Root Cause Analysis
 
-Deep dive into a GitHub issue to identify root cause, affected code, and define fix scope.
+7. **Identify the root cause** - Determine:
+   - What is happening (the symptom)
+   - Why it's happening (the cause)
+   - When it happens (the conditions/triggers)
+   - How often it happens (frequency/severity)
 
-## Usage
+8. **Check for related occurrences** - Search for:
+   - Similar error patterns elsewhere in the codebase
+   - Related issues or previous fixes
+   - Comments or TODOs about known issues
 
-```
-/investigate-bug {issue_number}
-```
+9. **Understand the impact**:
+   - Which users/companies are affected
+   - What functionality is broken
+   - Is there data corruption or just UX issues
+   - Is there a workaround
 
-## Workflow
+---
 
-### Step 0: Branch Setup
+## Phase 3: Define Scope Boundaries
 
-**Ensure working from master branch** (staging with accumulated fixes):
-```bash
-git checkout master && git pull origin master
-```
-This ensures you investigate against the latest code including pending fixes.
+10. **Document what WILL be modified** - List specific:
+    - Files that need changes
+    - Functions that need updates
+    - The nature of each change (fix, add handling, refactor)
 
-> **Note**: `published` is production - only compare to it when checking live behavior.
+11. **Document what WON'T be touched** - Explicitly list:
+    - Fragile or complex systems to avoid
+    - Related but out-of-scope areas
+    - Architecture that should remain unchanged
+    - **Why each item is excluded** (risk, complexity, not related)
 
-### Step 1: Validate Input
+    Example format:
+    > ### What We Won't Touch
+    > - **{System/Component}** - {Why it's excluded and what could break if we did touch it}
 
-Accept issue number from `$ARGUMENTS`. If not provided, ask user.
+12. **Identify risks** if excluded areas were modified:
+    - What could break
+    - What testing would be required
+    - Why it's not worth the risk for this fix
 
-Fetch the issue:
-```bash
-gh issue view $ARGUMENTS --json number,title,body,labels,state
-```
+---
 
-**Validation checks:**
-- Issue must exist
-- Issue should have `bug` label (warn if missing, but continue)
-- Issue should be open (warn if closed)
+## Phase 4: Data Analysis (If Applicable)
 
-### Step 2: Extract Bug Context
+13. **For data-related bugs**, investigate:
+    - How many records are affected
+    - Which companies/users have bad data
+    - Can data be recovered or must it be reconstructed
+    - What validation is needed before remediation
 
-Parse the issue body for:
-- **Error messages** - Look for stack traces, exception text
-- **Reproduction steps** - How to trigger the bug
-- **Expected vs actual behavior** - What should happen vs what happens
-- **Environment details** - Version, OS, browser, etc.
-- **User-reported files** - Any files mentioned by the reporter
+14. **For duplicate/integrity issues**, determine:
+    - Which record should be kept (evaluation criteria)
+    - What signals indicate "active use" (edits, linked records, attachments)
+    - What should happen to the archived/removed records
+    - Is manual review needed for any cases
 
-### Step 3: Code Investigation
+---
 
-Search for relevant code based on extracted context:
+## Phase 5: Plan the Fix
 
-1. **Search for error messages:**
-```bash
-grep -rn "error_text_from_issue" --include="*.py"
-```
+15. **Outline the proposed fix**:
+    - Specific code changes needed
+    - Order of operations
+    - Any data remediation steps
+    - Rollback plan if something goes wrong
 
-2. **Find related functions/classes:**
-```bash
-grep -rn "function_name" --include="*.py"
-```
+16. **Define testing requirements**:
+    - How to reproduce the original bug
+    - How to verify the fix works
+    - Regression tests needed
+    - Edge cases to check
 
-3. **Read and trace the error path:**
-- Start from the error location
-- Trace backwards to find the root cause
-- Document the call chain
+17. **Identify test data needs**:
+    - Specific records/UUIDs to test with
+    - Companies/environments to verify in
+    - Mock data or conditions to create
 
-### Step 4: Identify Root Cause
+---
 
-Analyze findings to determine:
-- **Primary cause** - The actual bug (code error, missing check, etc.)
-- **Contributing factors** - Conditions that expose the bug
-- **Impact assessment** - What breaks, who is affected
+## Phase 6: Document & Update Issue
 
-### Step 5: Define Scope
-
-Create explicit boundaries:
-
-**WILL modify (In-Scope):**
-- List specific files and functions
-- Include line number ranges if known
-- Note any new files needed
-
-**WILL NOT modify (Out-of-Scope):**
-- Related files that should not change
-- Features/systems that are explicitly excluded
-- Why they're excluded (prevent scope creep)
-
-### Step 6: Testing Requirements
-
-Identify what needs testing:
-- **Unit tests** - Functions to test
-- **Integration tests** - Flows to verify
-- **Manual tests** - Steps to reproduce and verify fix
-- **Regression risks** - What else might break
-
-### Step 7: Data Assessment
-
-Check if data remediation is needed:
-- Are there corrupted records?
-- Estimate count of affected records
-- Note any queries to identify them
-
-### Step 8: Generate Report
-
-Create the investigation report using this format:
+18. **Create Investigation Report** with this structure:
 
 ```markdown
-# Investigation Report: Issue #{number}
+## Bug Investigation Report
 
-**Issue:** {title}
-**Investigated:** {date}
-**Status:** Investigation Complete
+### Issue Summary
+- **Issue**: #{number} - {title}
+- **Component**: {affected module/system}
+- **Severity**: {Critical/High/Medium/Low}
+- **Affected**: {companies/users impacted}
 
----
+### Root Cause Analysis
+**What's happening**: {symptom description}
 
-## Summary
+**Why it's happening**: {root cause explanation}
 
-{2-3 sentence summary of the bug and its root cause}
+**Trigger conditions**: {what causes it to occur}
 
----
+### Affected Code (Will Be Modified)
+- `{file_path}:{line}` - {what change is needed}
+- `{file_path}:{line}` - {what change is needed}
 
-## Root Cause Analysis
+### What We Won't Touch
+- **{System/Component}** - {why excluded, what could break}
+- **{System/Component}** - {why excluded, what could break}
 
-### Primary Cause
-{Detailed explanation of what's causing the bug}
+### Proposed Fix
+{Step-by-step description of the fix}
 
-### Code Location
-- **File:** `{file_path}`
-- **Function:** `{function_name}`
-- **Lines:** {start}-{end}
+### Data Remediation (If Applicable)
+- Records affected: {count}
+- Remediation approach: {description}
+- Evaluation criteria: {how to determine correct action per record}
 
-### Error Path
-1. {Entry point}
-2. {Intermediate step}
-3. {Where error occurs}
+### Testing Plan
+**Reproduce Bug**:
+- {steps to trigger original bug}
 
-### Contributing Factors
-- {Factor 1}
-- {Factor 2}
+**Verify Fix**:
+- {steps to confirm fix works}
 
----
+**Regression Tests**:
+- {related functionality to verify still works}
 
-## Affected Files
-
-| File | Type | Lines | Purpose |
-|------|------|-------|---------|
-| `{path}` | Primary | {range} | {why it needs changes} |
-| `{path}` | Secondary | {range} | {why it needs changes} |
-
----
-
-## Scope Definition
-
-### WILL Modify (In-Scope)
-- [ ] `{file1}` - {what changes}
-- [ ] `{file2}` - {what changes}
-
-### WILL NOT Modify (Out-of-Scope)
-- `{file}` - {reason excluded}
-- `{feature}` - {reason excluded}
-
----
-
-## Testing Requirements
-
-### Unit Tests
-| Test | Purpose |
-|------|---------|
-| `test_{name}` | Verify {behavior} |
-
-### Integration Tests
-- [ ] {Scenario 1}
-- [ ] {Scenario 2}
-
-### Manual Verification
-1. {Step to reproduce bug}
-2. {Step to verify fix}
-3. {Expected outcome}
-
-### Regression Risks
-- {Area 1} - {why it might break}
-- {Area 2} - {why it might break}
-
----
-
-## Data Remediation
-
-**Needed:** {Yes/No}
-
-{If yes:}
-- **Affected records:** ~{count}
-- **Tables:** {list}
-- **Query to identify:** `{query}`
-
----
-
-## Recommendations
-
-1. {Priority recommendation}
-2. {Secondary recommendation}
-3. {Any warnings or concerns}
-
----
-
-## Next Steps
-
-Run `@fix-planner {issue_number}` to generate implementation plan.
+### Ready for /fix-bug
+- [ ] Root cause identified
+- [ ] Affected files documented
+- [ ] Scope boundaries defined (what we won't touch)
+- [ ] Fix approach outlined
+- [ ] Testing plan defined
+- [ ] Data remediation planned (if applicable)
 ```
 
-### Step 9: Post to GitHub
+19. **Post investigation to GitHub issue** as a comment:
+    ```bash
+    gh issue comment $ARGUMENTS --body "{investigation report}"
+    ```
 
-Save locally and post to GitHub:
-
-```bash
-# Save to local file
-mkdir -p docs/investigations
-# Save report to: docs/investigations/INVESTIGATION-{issue_number}.md
-
-# Post as GitHub comment
-gh issue comment $ARGUMENTS --body-file docs/investigations/INVESTIGATION-$ARGUMENTS.md
-
-# Add label
-gh issue edit $ARGUMENTS --add-label "investigated"
-```
-
-### Step 10: Session Complete
-
-Output:
-> ## Investigation Complete
->
-> **Issue:** #{number} - {title}
->
-> **Root Cause:** {brief summary}
->
-> **Report saved to:** `docs/investigations/INVESTIGATION-{number}.md`
->
-> **Posted to:** GitHub issue as comment
->
-> ---
->
-> ### Next step:
-> ```
-> @fix-planner {issue_number}
-> ```
+20. **Confirm readiness** - Tell the user:
+    > Investigation complete for issue #{number}.
+    >
+    > The investigation report has been added to the GitHub issue.
+    >
+    > When you're ready to implement the fix, run:
+    > `/fix-bug {issue_number}`
 
 ---
 
 ## Guidelines
 
-### Be Thorough But Focused
-- Investigate enough to identify root cause
-- Don't go down rabbit holes unrelated to the bug
-- Document dead ends briefly
-
-### Preserve Evidence
-- Include actual error messages and stack traces
-- Quote relevant code snippets
-- Note file paths and line numbers
-
-### Stay Objective
-- Report findings, not opinions
-- Separate facts from hypotheses
-- Mark uncertain conclusions
-
-### Scope Carefully
-- Keep scope as small as possible
-- Explicitly exclude related-but-separate issues
-- Note potential follow-up issues
-
----
-
-## Error Handling
-
-| Scenario | Action |
-|----------|--------|
-| Issue not found | "Issue #{n} not found. Check the number and try again." |
-| No bug label | "⚠️ Issue #{n} doesn't have a 'bug' label. Proceeding with investigation anyway." |
-| Cannot find code | "Could not locate code related to: {search}. Please provide more context." |
-| Multiple possible causes | List all possibilities with confidence levels |
-
----
-
-## Integration Points
-
-| Skill | Relationship |
-|-------|--------------|
-| `@issue-triage` | **Predecessor** - May suggest issues to investigate |
-| `@fix-planner` | **Next step** - Uses this investigation report |
+- **Read before concluding** - Always read the actual code, don't assume from names
+- **Be explicit about exclusions** - The "What We Won't Touch" section builds confidence
+- **Consider data carefully** - For data bugs, understand what "correct" looks like before planning fixes
+- **Check for patterns** - If a bug exists in one place, it may exist in similar code
+- **Don't fix during investigation** - This command investigates only; `/fix-bug` implements
+- **Update the issue** - Always post findings to GitHub so they're preserved
+- **Ask when uncertain** - If scope boundaries are unclear, ask the user before proceeding
