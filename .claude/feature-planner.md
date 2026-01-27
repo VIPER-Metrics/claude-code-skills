@@ -138,13 +138,18 @@ Create the plan with this exact structure:
 
 ## Pre-Implementation Checklist
 
-- [ ] Create feature branch from **master** (staging): `git checkout master && git pull && git checkout -b feature-{number}-{short-description}`
+- [ ] Create worktree from **published** (main branch):
+  ```bash
+  git fetch origin
+  git worktree add ~/GitHub/viper-metrics-worktrees/{number}-{short-name} -b feature-{number}-{short-description} origin/published
+  cd ~/GitHub/viper-metrics-worktrees/{number}-{short-name}
+  ```
 - [ ] Review acceptance criteria with stakeholder (if unclear)
 - [ ] Verify current test suite passes
 - [ ] Backup database (if schema changes involved)
 - [ ] Review VIPER Metrics coding standards
 
-> **Note**: We branch from `master` (staging) which contains accumulated changes, not `published` (production).
+> **Note**: We use git worktrees to isolate work on each issue. Branch from `published` (main branch).
 
 ---
 

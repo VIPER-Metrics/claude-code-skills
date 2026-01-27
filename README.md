@@ -166,14 +166,15 @@ Executes code changes based on an approved fix plan.
 
 **What it does:**
 - Loads fix plan from docs or GitHub
-- Creates feature branch: `fix/issue-{number}-{description}`
+- Creates isolated worktree: `~/GitHub/viper-metrics-worktrees/{number}-{name}`
+- Creates branch: `fix-{number}-{description}`
 - Implements each change from the plan
 - Writes/updates tests as specified
 - Runs test suite
 - Creates data remediation scripts (but doesn't run them)
 - Commits with structured message
 
-**Output:** Committed changes on feature branch
+**Output:** Committed changes in worktree, ready for PR
 
 ### 3b. `/implement-feature {issue_number}`
 
@@ -184,13 +185,14 @@ Executes code changes based on an approved feature plan.
 **What it does:**
 - Loads feature plan from docs or GitHub
 - Confirms database changes were made in Anvil IDE (if required)
-- Creates feature branch: `feature-{number}-{description}`
+- Creates isolated worktree: `~/GitHub/viper-metrics-worktrees/{number}-{name}`
+- Creates branch: `feature-{number}-{description}`
 - Implements in phases: Data Layer → Server Layer → Client Layer → Integration
 - Writes tests as specified
 - Includes manual testing checkpoint
 - Commits with structured message
 
-**Output:** Committed changes on feature branch
+**Output:** Committed changes in worktree, ready for PR
 
 ### 4. `/create-pr {issue_number}`
 
@@ -232,7 +234,7 @@ Quick commands in `.claude/commands/` for common workflows:
 
 ### `/fix-bug {issue_number}`
 Full workflow that handles investigation through PR creation in one session.
-- Creates branch immediately for isolation
+- Creates worktree immediately for complete isolation
 - Triages bug complexity (trivial vs standard vs complex)
 - Includes human review checkpoint before implementation
 
@@ -293,6 +295,43 @@ Create an urgent hotfix issue for critical production bugs.
 # Step 3: Create PR
 /create-pr 789
 ```
+
+## Git Worktree Workflow
+
+These skills use **git worktrees** for branch isolation, allowing you to work on multiple issues simultaneously without switching branches or stashing changes.
+
+### Directory Structure
+
+```
+~/GitHub/viper-metrics-v2-0/                    # Main repo - stays on `published`
+~/GitHub/viper-metrics-worktrees/
+├── 657-switch-inspection-asset/                # Issue #657 worktree
+├── 667-defect-pagination/                      # Issue #667 worktree
+└── {issue-number}-{short-name}/                # New worktrees follow this pattern
+```
+
+### Common Worktree Commands
+
+```bash
+# List all worktrees
+git worktree list
+
+# Create new worktree for an issue (done automatically by skills)
+git worktree add ~/GitHub/viper-metrics-worktrees/{issue}-{name} -b fix-{issue}-{name} origin/published
+
+# Remove a worktree (after merging PR)
+git worktree remove ~/GitHub/viper-metrics-worktrees/{issue}-{name}
+
+# Prune stale worktree references
+git worktree prune
+```
+
+### Why Worktrees?
+
+- **Parallel development**: Work on multiple issues without context switching
+- **Clean isolation**: Each issue has its own working directory
+- **No stashing**: Leave work-in-progress in one worktree, switch to another
+- **Shared git data**: All worktrees share the same `.git` objects and refs
 
 ## GitHub Integration
 

@@ -58,17 +58,27 @@ If the plan includes Data Model Changes:
 
 **If database changes not done:** Wait for user to complete them and pull changes before proceeding.
 
-### Step 4: Create Branch
+### Step 4: Create Worktree
 
-Create a feature branch:
+Create an isolated worktree for the feature (instead of switching branches in the main repo):
+
 ```bash
-# Get short description from issue title
-BRANCH_NAME="feature-$ARGUMENTS-$(gh issue view $ARGUMENTS --json title --jq '.title' | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | cut -c1-30)"
+# Ensure we have latest from remote
+git fetch origin
 
-git checkout master
-git pull
-git checkout -b "$BRANCH_NAME"
+# Get short description from issue title for directory and branch name
+SHORT_DESC=$(gh issue view $ARGUMENTS --json title --jq '.title' | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | cut -c1-30)
+BRANCH_NAME="feature-$ARGUMENTS-$SHORT_DESC"
+WORKTREE_DIR=~/GitHub/viper-metrics-worktrees/$ARGUMENTS-$SHORT_DESC
+
+# Create worktree with new branch from published (main branch)
+git worktree add "$WORKTREE_DIR" -b "$BRANCH_NAME" origin/published
+
+# Change into the worktree
+cd "$WORKTREE_DIR"
 ```
+
+**Note:** Branch names must NOT contain slashes (Anvil requirement). Use `feature-123-description` format.
 
 ### Step 5: Execute Implementation Phases
 
@@ -204,6 +214,8 @@ Output:
 >
 > **Issue:** #{number} - {title}
 >
+> **Worktree:** `{worktree_dir}`
+>
 > **Branch:** `{branch_name}`
 >
 > **Components Created/Modified:**
@@ -223,6 +235,12 @@ Output:
 > 3. **Create PR:**
 > ```
 > @create-pr {issue_number}
+> ```
+>
+> ### After PR is merged:
+> ```bash
+> # Remove the worktree
+> git worktree remove {worktree_dir}
 > ```
 
 ---

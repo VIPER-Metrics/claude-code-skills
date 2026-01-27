@@ -21,20 +21,25 @@ Accept issue number from `$ARGUMENTS`. If not provided, ask user.
 
 Verify prerequisites:
 ```bash
-# Check we're on a fix branch
+# Get current branch name
 CURRENT_BRANCH=$(git branch --show-current)
-if [[ ! "$CURRENT_BRANCH" =~ ^fix/ ]]; then
-    echo "Not on a fix branch. Current: $CURRENT_BRANCH"
+
+# Check we're on a fix or feature branch (worktree pattern uses fix-{n} or feature-{n})
+if [[ ! "$CURRENT_BRANCH" =~ ^(fix|feature)- ]]; then
+    echo "Not on a fix/feature branch. Current: $CURRENT_BRANCH"
 fi
 
 # Check for uncommitted changes
 git status --porcelain
+
+# Verify this is a worktree (optional - provides context)
+git worktree list | grep "$(pwd)"
 ```
 
 **Validations:**
-- Must be on a `fix/*` branch
+- Must be on a `fix-*` or `feature-*` branch (worktree pattern)
 - No uncommitted changes
-- Branch has commits ahead of base
+- Branch has commits ahead of base (`published`)
 
 ### Step 2: Gather Context
 
@@ -48,11 +53,11 @@ gh issue view $ARGUMENTS --json title,body,labels
 cat docs/fix-plans/FIX-$ARGUMENTS-plan.md 2>/dev/null || \
   gh issue view $ARGUMENTS --json comments --jq '.comments[] | select(.body | contains("# Fix Plan:")) | .body'
 
-# Get commit history on this branch
-git log master..HEAD --oneline
+# Get commit history on this branch (from published base)
+git log origin/published..HEAD --oneline
 
 # Get changed files
-git diff master --stat
+git diff origin/published --stat
 ```
 
 ### Step 3: Generate PR Description
@@ -144,7 +149,7 @@ Create the PR using GitHub CLI:
 gh pr create \
   --title "Fix #{issue_number}: {short_title}" \
   --body-file /tmp/pr-description.md \
-  --base master \
+  --base published \
   --label "bug-fix"
 ```
 
@@ -183,7 +188,9 @@ Output:
 >
 > **PR:** {pr_url}
 >
-> **Branch:** `{branch_name}` → `master`
+> **Worktree:** `{current_directory}`
+>
+> **Branch:** `{branch_name}` → `published`
 >
 > **Files changed:** {count}
 >
@@ -194,6 +201,11 @@ Output:
 > 2. Address review feedback
 > 3. Merge when approved
 > 4. Run data remediation if needed (post-deployment)
+> 5. **Clean up worktree** after merge:
+>    ```bash
+>    cd ~/GitHub/viper-metrics-v2-0  # Return to main repo
+>    git worktree remove {worktree_dir}
+>    ```
 
 ---
 
@@ -220,11 +232,12 @@ Output:
 
 | Scenario | Action |
 |----------|--------|
-| Not on fix branch | "Switch to the fix branch: `git checkout fix/issue-{n}-...`" |
+| Not on fix/feature branch | "You're not in a worktree. Create one with: `git worktree add ~/GitHub/viper-metrics-worktrees/{n}-{name} -b fix-{n}-{name} origin/published`" |
 | Uncommitted changes | "Commit or stash changes before creating PR" |
 | No commits on branch | "No changes to submit. Run @implement-fix first" |
 | PR already exists | Show existing PR URL: "PR already exists: {url}" |
 | Push fails | "Push failed. Check permissions and try: `git push -u origin {branch}`" |
+| Not in a worktree | "Navigate to the worktree directory: `cd ~/GitHub/viper-metrics-worktrees/{issue}-{name}`" |
 
 ---
 

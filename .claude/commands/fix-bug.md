@@ -11,13 +11,23 @@ Investigate and fix GitHub issue #$ARGUMENTS
    - If not found: You'll do investigation in Phase 1 (consider suggesting `/investigate-bug` first for complex issues)
    - The investigation's "What We Won't Touch" section defines strict boundaries - respect them
 
-3. **Create isolation branch immediately**:
-   - Determine base branch: Run `git remote show origin | grep 'HEAD branch'` to find the default branch
-   - If that fails, check if `origin/master` exists with `git branch -r | grep origin/master`
-   - Use `master` as the staging branch (this is where PRs will be merged)
-   - `git checkout {base_branch} && git pull origin {base_branch}`
-   - `git checkout -b fix-{issue_number}-{short-description}`
-   - This isolates your work from other changes during investigation
+3. **Create worktree for isolation**:
+   - **Worktree pattern**: Instead of switching branches in the main repo, create a separate worktree
+   - Determine the worktree directory: `~/GitHub/viper-metrics-worktrees/` (or equivalent for the project)
+   - Create branch name: `fix-{issue_number}-{short-description}` (no slashes - Anvil requirement)
+   - First, ensure we're up to date:
+     ```bash
+     git fetch origin
+     ```
+   - Create the worktree with a new branch from `published` (main branch):
+     ```bash
+     git worktree add ~/GitHub/viper-metrics-worktrees/{issue_number}-{short-name} -b fix-{issue_number}-{short-description} origin/published
+     ```
+   - Change into the worktree directory:
+     ```bash
+     cd ~/GitHub/viper-metrics-worktrees/{issue_number}-{short-name}
+     ```
+   - This isolates your work completely from the main repo and other worktrees
 
 4. **Quick assessment** - Classify the bug:
    - **Trivial**: Typo, missing null check, obvious one-liner → Skip to streamlined flow

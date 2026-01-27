@@ -71,13 +71,18 @@ Create the plan with this exact structure:
 
 ## Pre-Implementation Checklist
 
-- [ ] Create feature branch from **master** (staging): `git checkout master && git pull && git checkout -b fix-issue-{number}-{short-description}`
+- [ ] Create worktree from **published** (main branch):
+  ```bash
+  git fetch origin
+  git worktree add ~/GitHub/viper-metrics-worktrees/{number}-{short-name} -b fix-{number}-{short-description} origin/published
+  cd ~/GitHub/viper-metrics-worktrees/{number}-{short-name}
+  ```
 - [ ] Verify current test suite passes: `python -m pytest` or appropriate command
 - [ ] Backup affected data (if data remediation involved)
 - [ ] Review investigation report thoroughly
 - [ ] Confirm understanding of root cause
 
-> **Note**: We branch from `master` (staging) which contains accumulated fixes, not `published` (production).
+> **Note**: We use git worktrees to isolate work on each issue. Branch from `published` (main branch).
 
 ---
 
