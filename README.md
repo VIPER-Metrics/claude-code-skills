@@ -1,16 +1,25 @@
 # Claude Code Skills
 
-A comprehensive set of Claude Code skills, commands, and agents for Anvil.works development and bug fixing workflows.
+A comprehensive set of Claude Code skills, commands, and agents for Anvil.works development workflows.
 
 ## Overview
 
-These skills form a complete bug-fixing pipeline that integrates with GitHub Issues and Pull Requests:
+These skills form complete pipelines for both **bug fixing** and **feature development** that integrate with GitHub Issues and Pull Requests:
 
+### Bug Fix Pipeline
 ```
 @issue-triage → @investigate-bug → @fix-planner → @implement-fix → @create-pr
       ↓               ↓                 ↓               ↓               ↓
   Prioritizes     Posts report      Posts plan     Commits code    Opens PR
   open issues     to issue          to issue       to branch       on GitHub
+```
+
+### Feature Development Pipeline
+```
+@create-feature → @feature-planner → @implement-feature → @create-pr
+       ↓                ↓                   ↓                 ↓
+   Creates          Posts plan        Commits code       Opens PR
+   GitHub issue     to issue          to branch          on GitHub
 ```
 
 ## Installation
@@ -48,22 +57,20 @@ Or manually copy the files:
 your-project/
 └── .claude/
     ├── create-pr.md
+    ├── feature-planner.md
     ├── fix-planner.md
+    ├── get-session-logs.md
+    ├── implement-feature.md
     ├── implement-fix.md
     ├── investigate-bug.md
-    ├── agents/
-    │   ├── anvil-backend-specialist.md
-    │   ├── anvil-client-yaml-specialist.md
-    │   ├── code-reviewer.md
-    │   ├── data-table-documenter.md
-    │   ├── documentation-writer.md
-    │   ├── maintenance-planner.md
-    │   └── mixpanel-analytics-optimizer.md
     ├── commands/
-    │   ├── anvil-reference.md
+    │   ├── create-bug.md
+    │   ├── create-hotfix.md
     │   ├── fix-bug.md
     │   └── investigate-bug.md
     └── skills/
+        ├── create-feature/
+        │   └── SKILL.md
         └── issue-triage/
             ├── SKILL.md
             └── scripts/
@@ -72,7 +79,21 @@ your-project/
 
 ## Skills
 
-### 0. `/issue-triage`
+### `/create-feature {description}` (optional)
+
+Transform a rough feature idea into a well-structured GitHub issue through guided discovery.
+
+**What it does:**
+- Takes your initial feature idea (even vague descriptions work)
+- Investigates the codebase to find related code and patterns
+- Asks clarifying questions about users, scope, and edge cases
+- Creates a comprehensive GitHub issue with acceptance criteria
+
+**Output:** GitHub issue with user story, acceptance criteria, use cases, and technical context
+
+---
+
+### `/issue-triage`
 
 Fetch, rank, and display open GitHub issues by priority.
 
@@ -121,6 +142,22 @@ Generates an actionable implementation plan from an investigation report.
 
 **Output:** Implementation plan posted as GitHub issue comment
 
+### 2b. `/feature-planner {issue_number}`
+
+Generates an actionable implementation plan from a feature request issue.
+
+**What it does:**
+- Extracts requirements from feature issue (acceptance criteria, use cases)
+- Analyzes codebase for integration points and patterns
+- Designs architecture (data model, server functions, UI components)
+- Creates phased implementation steps with code snippets
+- Defines testing strategy (unit, integration, manual)
+- Saves plan to `docs/feature-plans/FEATURE-{number}-plan.md`
+- Posts plan to GitHub issue
+- Adds "planned" label
+
+**Output:** Implementation plan posted as GitHub issue comment
+
 ### 3. `/implement-fix {issue_number}`
 
 Executes code changes based on an approved fix plan.
@@ -138,11 +175,28 @@ Executes code changes based on an approved fix plan.
 
 **Output:** Committed changes on feature branch
 
+### 3b. `/implement-feature {issue_number}`
+
+Executes code changes based on an approved feature plan.
+
+**Prerequisite:** Must run `/feature-planner` first
+
+**What it does:**
+- Loads feature plan from docs or GitHub
+- Confirms database changes were made in Anvil IDE (if required)
+- Creates feature branch: `feature-{number}-{description}`
+- Implements in phases: Data Layer → Server Layer → Client Layer → Integration
+- Writes tests as specified
+- Includes manual testing checkpoint
+- Commits with structured message
+
+**Output:** Committed changes on feature branch
+
 ### 4. `/create-pr {issue_number}`
 
-Creates a GitHub Pull Request from a completed fix implementation.
+Creates a GitHub Pull Request from a completed implementation.
 
-**Prerequisite:** Must run `/implement-fix` first
+**Prerequisite:** Must run `/implement-fix` or `/implement-feature` first
 
 **What it does:**
 - Validates branch state (on fix branch, no uncommitted changes)
@@ -154,35 +208,47 @@ Creates a GitHub Pull Request from a completed fix implementation.
 
 **Output:** Pull request URL
 
-## Agents
+---
 
-Specialized agents in `.claude/agents/` handle domain-specific tasks:
+### `/get-session-logs {issue_number}`
 
-| Agent | Purpose |
-|-------|---------|
-| `anvil-backend-specialist` | Server modules, database queries, security controls, `q.fetch_only()` optimization |
-| `anvil-client-yaml-specialist` | Form YAML modifications, UI components, data bindings, event handlers |
-| `code-reviewer` | Security review, formatting checks, breaking change detection |
-| `data-table-documenter` | Database schema documentation after changes |
-| `documentation-writer` | Feature documentation, What's New content |
-| `maintenance-planner` | Heavy equipment maintenance workflow design |
-| `mixpanel-analytics-optimizer` | Analytics tracking via Segment/Mixpanel |
+Fetch and analyze Anvil session logs for a bug report that contains a session link.
 
-**Usage**: Agents are invoked automatically by Claude Code when appropriate, or can be triggered via the Task tool.
+**Prerequisites:** `ANVIL_AUTH_COOKIES` environment variable set
 
-## Quick Commands
+**What it does:**
+- Extracts session ID from the GitHub issue body
+- Fetches session logs from Anvil
+- Analyzes user journey leading up to the error
+- Displays forms visited, data accessed, and timing
 
-For simpler workflows, these commands in `.claude/commands/` combine multiple steps:
+**Output:** Formatted session analysis with user journey and raw logs
+
+---
+
+## Commands
+
+Quick commands in `.claude/commands/` for common workflows:
 
 ### `/fix-bug {issue_number}`
-Full workflow agent that handles investigation through PR creation in one session.
+Full workflow that handles investigation through PR creation in one session.
 - Creates branch immediately for isolation
 - Triages bug complexity (trivial vs standard vs complex)
 - Includes human review checkpoint before implementation
-- Runs specialist agent reviews when appropriate
 
 ### `/investigate-bug {issue_number}` (command version)
 Streamlined investigation that prepares everything for `/fix-bug`.
+
+### `/create-bug`
+Guided workflow to create a well-structured bug report issue.
+- Gathers reproduction steps and expected behavior
+- Investigates codebase for related code
+- Creates comprehensive GitHub issue
+
+### `/create-hotfix`
+Create an urgent hotfix issue for critical production bugs.
+- Streamlined for speed when production is down
+- Marks issues with appropriate priority labels
 
 ## Workflow Examples
 
@@ -210,6 +276,22 @@ Streamlined investigation that prepares everything for `/fix-bug`.
 ```bash
 # For simpler bugs, use the combined workflow
 /fix-bug 142
+```
+
+### Feature Development
+
+```bash
+# Step 0: Create a well-structured feature issue (optional - skip if issue exists)
+/create-feature "add bulk export for assets"
+
+# Step 1: Create implementation plan for feature issue
+/feature-planner 789
+
+# Step 2: Review plan, complete any database changes in Anvil IDE, then implement
+/implement-feature 789
+
+# Step 3: Create PR
+/create-pr 789
 ```
 
 ## GitHub Integration
