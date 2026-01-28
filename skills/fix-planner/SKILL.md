@@ -42,6 +42,7 @@ Look for an investigation report in the comments (typically created by `@investi
 ### Step 2: Extract Investigation Context
 
 Parse the investigation report to extract:
+the full investigation report can be found at the `wiki/issues/$ARGUMENTS/investigation.md`
 
 1. **Root Cause Analysis** - What is actually causing the bug
 2. **Affected Files and Line Numbers** - Specific locations that need modification
@@ -53,6 +54,7 @@ Parse the investigation report to extract:
 ### Step 3: Generate Implementation Plan
 
 Create the plan with this exact structure:
+save it to `wiki/issues/$ARGUMENTS/fix-plan.md`
 
 ---
 
@@ -71,18 +73,11 @@ Create the plan with this exact structure:
 
 ## Pre-Implementation Checklist
 
-- [ ] Create worktree from **published** (main branch):
-  ```bash
-  git fetch origin
-  git worktree add ~/GitHub/viper-metrics-worktrees/{number}-{short-name} -b fix-{number}-{short-description} origin/published
-  cd ~/GitHub/viper-metrics-worktrees/{number}-{short-name}
-  ```
+- [ ] Create feature branch: `fix/issue-{number}-{short-description}`
 - [ ] Verify current test suite passes: `python -m pytest` or appropriate command
 - [ ] Backup affected data (if data remediation involved)
 - [ ] Review investigation report thoroughly
 - [ ] Confirm understanding of root cause
-
-> **Note**: We use git worktrees to isolate work on each issue. Branch from `published` (main branch).
 
 ---
 
@@ -413,7 +408,7 @@ Every proposed change should clearly explain how it addresses the identified roo
 
 **Issue:** #142 - Error when downloading inspection images
 
-**Plan saved to:** `docs/fix-plans/FIX-142-plan.md`
+**Plan saved to:** `wiki/issues/$ARGUMENTS/fix-plan.md`
 
 **Posted to:** GitHub issue as comment
 

@@ -1,3 +1,8 @@
+---
+name: investigate-bug
+description: Deep dive investigation of a GitHub issue to identify root cause, affected files, and scope. Use when the user wants to investigate a bug, analyze an issue, find the root cause, or says "investigate issue", "debug issue", "analyze bug", "what's causing issue #X". Creates an investigation report and posts it to the GitHub issue.
+---
+
 # Bug Investigation Agent
 
 Thoroughly investigate GitHub issue #$ARGUMENTS and prepare all context needed for `/fix-bug` to implement the solution.
@@ -110,32 +115,24 @@ Thoroughly investigate GitHub issue #$ARGUMENTS and prepare all context needed f
 
 ---
 
-## Phase 5: Plan the Fix
-
-15. **Outline the proposed fix**:
-    - Specific code changes needed
-    - Order of operations
-    - Any data remediation steps
-    - Rollback plan if something goes wrong
-
-16. **Define testing requirements**:
-    - How to reproduce the original bug
-    - How to verify the fix works
-    - Regression tests needed
-    - Edge cases to check
-
-17. **Identify test data needs**:
-    - Specific records/UUIDs to test with
-    - Companies/environments to verify in
-    - Mock data or conditions to create
-
 ---
 
-## Phase 6: Document & Update Issue
+## Phase 5: Document & Update Issue
 
-18. **Create Investigation Report** with this structure:
+18. **Create Investigation Report** and save to wiki with this structure:
+
+Save to: `wiki/issues/$ARGUMENTS/investigation.md`
 
 ```markdown
+---
+title: "Investigation: Issue #$ARGUMENTS"
+date: $(date +%Y-%m-%d)
+author: Claude
+status: complete
+issue: $ARGUMENTS
+tags: [investigation, bug]
+---
+
 ## Bug Investigation Report
 
 ### Issue Summary
@@ -186,15 +183,24 @@ Thoroughly investigate GitHub issue #$ARGUMENTS and prepare all context needed f
 - [ ] Data remediation planned (if applicable)
 ```
 
-19. **Post investigation to GitHub issue** as a comment:
+19. **Save investigation to wiki**:
     ```bash
-    gh issue comment $ARGUMENTS --body "{investigation report}"
+    # Create issue folder and save
+    mkdir -p wiki/issues/$ARGUMENTS
+    # Save to wiki/issues/$ARGUMENTS/investigation.md
     ```
 
-20. **Confirm readiness** - Tell the user:
+20. **Post investigation to GitHub issue** as a comment:
+    ```bash
+    gh issue comment $ARGUMENTS --body-file wiki/issues/$ARGUMENTS/investigation.md
+    ```
+
+21. **Confirm readiness** - Tell the user:
     > Investigation complete for issue #{number}.
     >
-    > The investigation report has been added to the GitHub issue.
+    > **Saved to:** `wiki/issues/{number}/investigation.md`
+    >
+    > The investigation report has also been added to the GitHub issue.
     >
     > When you're ready to implement the fix, run:
     > `/fix-bug {issue_number}`

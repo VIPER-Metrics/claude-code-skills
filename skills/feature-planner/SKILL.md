@@ -1,6 +1,6 @@
 ---
 name: feature-planner
-description: Generate an actionable implementation plan from a GitHub feature request issue. Use when the user wants to plan a new feature, create an implementation plan, prepare for building a feature, or says "plan feature", "create feature plan", "plan implementation for feature", or "how should I implement issue #X".
+description: Generate an actionable implementation plan from a GitHub feature request issue. Use when the user wants to plan a new feature, create an implementation plan, prepare for building a feature, or says "plan feature", "create feature plan", "plan implementation for feature", or "how should I implement issue #X". Works with feature/enhancement issues.
 ---
 
 # Feature Planner Skill
@@ -15,7 +15,7 @@ Generate an actionable implementation plan from a GitHub feature request issue.
 
 ## Description
 
-This skill takes a GitHub issue number for a feature request or enhancement and creates a detailed, step-by-step implementation plan. It analyzes the requirements, identifies affected areas of the codebase, generates specific implementation steps, testing strategies, and risk assessments. The plan is saved locally AND posted back to GitHub for easy reference.
+This skill takes a GitHub issue number for a feature request or enhancement and creates a detailed, step-by-step implementation plan. It analyzes the requirements, identifies affected areas of the codebase, generates specific implementation steps, testing strategies, and risk assessments. The plan is saved to the wiki AND posted back to GitHub for easy reference.
 
 ## Workflow
 
@@ -57,10 +57,8 @@ Also check issue comments for:
 Investigate the codebase to understand:
 
 1. **Related existing code:**
-```bash
-# Search for similar functionality
-grep -rn "related_keyword" --include="*.py"
-```
+   - Search for similar functionality
+   - Identify modules that will interact with this feature
 
 2. **Identify integration points:**
    - Which modules will the feature interact with?
@@ -99,11 +97,20 @@ Based on requirements and codebase analysis, design the solution:
 
 ### Step 5: Generate Implementation Plan
 
-Create the plan with this exact structure:
+Create the plan and save to: `wiki/issues/$ARGUMENTS/feature-plan.md`
 
 ---
 
 ```markdown
+---
+title: "Feature Plan: Issue #$ARGUMENTS"
+date: $(date +%Y-%m-%d)
+author: Claude
+status: ready
+issue: $ARGUMENTS
+tags: [feature, planning]
+---
+
 # Feature Plan: Issue #{issue_number}
 
 **Issue Title:** {title}
@@ -138,18 +145,10 @@ Create the plan with this exact structure:
 
 ## Pre-Implementation Checklist
 
-- [ ] Create worktree from **published** (main branch):
-  ```bash
-  git fetch origin
-  git worktree add ~/GitHub/viper-metrics-worktrees/{number}-{short-name} -b feature-{number}-{short-description} origin/published
-  cd ~/GitHub/viper-metrics-worktrees/{number}-{short-name}
-  ```
+- [ ] Create feature branch: `feature-{number}-{short-description}`
 - [ ] Review acceptance criteria with stakeholder (if unclear)
-- [ ] Verify current test suite passes
 - [ ] Backup database (if schema changes involved)
 - [ ] Review VIPER Metrics coding standards
-
-> **Note**: We use git worktrees to isolate work on each issue. Branch from `published` (main branch).
 
 ---
 
@@ -327,30 +326,6 @@ def open_{feature}(self, **event_args):
 |-----------|-----------|---------|
 | `{test_file}` | `test_{name}` | {what it verifies} |
 
-**Test Code:**
-```python
-def test_{function_name}_happy_path():
-    """Test that {description}"""
-    # Arrange
-    {setup}
-
-    # Act
-    result = {function_name}({args})
-
-    # Assert
-    assert result == {expected}
-
-
-def test_{function_name}_edge_case():
-    """Test that {edge case handling}"""
-    # Arrange
-    {setup}
-
-    # Act & Assert
-    with pytest.raises({ExpectedError}):
-        {function_name}({invalid_args})
-```
-
 ### Integration Tests
 
 - [ ] {End-to-end scenario 1}
@@ -371,8 +346,8 @@ def test_{function_name}_edge_case():
 
 | Criterion | How to Verify | Status |
 |-----------|---------------|--------|
-| {Criterion 1} | {Test method} | [ ] |
-| {Criterion 2} | {Test method} | [ ] |
+| {Criterion 1} | {Test method} | ⬜ |
+| {Criterion 2} | {Test method} | ⬜ |
 
 ---
 
@@ -476,7 +451,7 @@ def test_{function_name}_edge_case():
 
 1. Review this plan and request changes if needed
 2. Make database changes in Anvil IDE (if any)
-3. When approved, run: `@implement-feature {issue_number}`
+3. When approved, run: `/implement-feature {issue_number}`
 4. Create PR and request code review
 ```
 
@@ -517,21 +492,17 @@ Be conservative - it's better to over-estimate than under-estimate.
 
 ### Step 8: Save the Plan
 
-Create the docs directory if it doesn't exist:
+Save to the wiki:
 ```bash
-mkdir -p docs/feature-plans
-```
-
-Save the plan:
-```bash
-# The plan should be saved to: docs/feature-plans/FEATURE-{issue-number}-plan.md
+mkdir -p wiki/issues/$ARGUMENTS
+# Save to wiki/issues/$ARGUMENTS/feature-plan.md
 ```
 
 ### Step 9: Post to GitHub
 
 Add the plan as a comment on the issue:
 ```bash
-gh issue comment $ARGUMENTS --body-file docs/feature-plans/FEATURE-$ARGUMENTS-plan.md
+gh issue comment $ARGUMENTS --body-file wiki/issues/$ARGUMENTS/feature-plan.md
 ```
 
 ### Step 10: Add Label
@@ -548,7 +519,7 @@ Output:
 >
 > **Issue:** #{number} - {title}
 >
-> **Plan saved to:** `docs/feature-plans/FEATURE-{number}-plan.md`
+> **Plan saved to:** `wiki/issues/{number}/feature-plan.md`
 >
 > **Posted to:** GitHub issue as comment
 >
@@ -556,7 +527,7 @@ Output:
 >
 > ### Review the plan and when approved, run:
 > ```
-> @implement-feature {issue_number}
+> /implement-feature {issue_number}
 > ```
 
 ---
@@ -600,7 +571,7 @@ Output:
 | Scenario | Action |
 |----------|--------|
 | Issue not found | "Issue #{n} not found. Check the number and try again." |
-| No feature label | "Warning: Issue #{n} doesn't have a 'feature' or 'enhancement' label. Proceeding anyway." |
+| No feature label | "⚠️ Issue #{n} doesn't have a 'feature' or 'enhancement' label. Proceeding anyway." |
 | Unclear requirements | Ask specific clarifying questions before generating plan |
 | Very large feature | Suggest breaking into multiple issues/phases |
 | Missing acceptance criteria | List what's missing and suggest criteria based on description |
@@ -611,10 +582,26 @@ Output:
 
 | Skill | Relationship |
 |-------|--------------|
-| `@issue-triage` | **Predecessor** - May suggest features to plan |
-| `@implement-feature` | **Next step** - Executes this plan |
-| `@create-pr` | **After implementation** - Creates pull request |
+| `/issue-triage` | **Predecessor** - May suggest features to plan |
+| `/implement-feature` | **Next step** - Executes this plan |
 | VIPER Metrics Standards | **Reference** - Follow coding conventions |
+
+---
+
+## Wiki Structure
+
+After planning, the wiki should contain:
+```
+wiki/issues/$ARGUMENTS/
+└── feature-plan.md    # From /feature-planner (this skill)
+```
+
+After implementation, it will also include:
+```
+wiki/issues/$ARGUMENTS/
+├── feature-plan.md    # From /feature-planner
+└── test-plan.md       # From /implement-feature
+```
 
 ---
 
@@ -625,7 +612,7 @@ Output:
 
 **Issue:** #789 - Add bulk export for inspection reports
 
-**Plan saved to:** `docs/feature-plans/FEATURE-789-plan.md`
+**Plan saved to:** `wiki/issues/789/feature-plan.md`
 
 **Posted to:** GitHub issue as comment
 
@@ -633,6 +620,6 @@ Output:
 
 ### Review the plan and when approved, run:
 ```
-@implement-feature 789
+/implement-feature 789
 ```
 ```
